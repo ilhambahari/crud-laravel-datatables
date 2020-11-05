@@ -71,6 +71,24 @@
     </div>
 </div>
 
+<div id="confirmModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h2 class="modal-title">Confirmation</h2>
+            </div>
+            <div class="modal-body">
+                <h4 align="center" style="margin:0;">Are you sure you want to remove this data?</h4>
+            </div>
+            <div class="modal-footer">
+             <button type="button" name="ok_button" id="ok_button" class="btn btn-danger">OK</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 	$(document).ready(function(){
 		$('#user_table').DataTable({
@@ -104,9 +122,15 @@
 		$('#sample_form').submit(function(e){
 			e.preventDefault();
 			var action_url = '';
-
+			var action_val = '';
 			if($('#action').val() == 'Add'){
+				action_val = 'Add';
 				action_url = "{{ route('sample.store') }}";
+			}
+
+			if($('#action').val() == 'Edit'){
+				action_val = 'Edit';
+				action_url = "{{ route('sample.update') }}";
 			}
 
 			$.ajax({
@@ -114,9 +138,15 @@
 				method: "POST",
 				data: $(this).serialize(),
 				dataType: 'json',
+				beforeSend:function(){
+					$('#action_button').val('Loading');
+					$('#action_button').attr('disabled', 'disabled');
+				},
 				success: function(response){
+					$('#action_button').val(action_val);
+					$('#action_button').attr('disabled', false);
+
 					var html = "";
-					console.log(response);
 					if(response.errors){
 						html += '<div class="alert alert-danger">';
 						for(var i = 0; i<response.errors.length; i++){
@@ -132,6 +162,48 @@
 					}
 
 					$('#form_result').html(html);
+				}
+			});
+		});
+
+		$(document).on('click', '.edit', function(){
+			var id = $(this).attr('id');
+			$('#form_result').html('');
+			var edit_url = "{{ url('') }}/sample/"+id+"/edit";
+			$.ajax({
+				url: edit_url,
+				dataType: 'json',
+				success: function(response){
+					$('#first_name').val(response.result.first_name);
+					$('#last_name').val(response.result.last_name);
+					$('#hidden_id').val(id);
+					$('#modal-title').text('Edit Record');
+					$('#action_button').val('Edit');
+					$('#action').val('Edit');
+					$('#formModal').modal('show');
+				}
+			});
+		});
+
+		var user_id;
+		$(document).on('click', '.delete', function(){
+			user_id = $(this).attr('id');
+			$('#confirmModal').modal('show');
+		});
+
+		$('#ok_button').click(function(){
+			var delete_url = "{{ url('') }}/sample/destroy/"+user_id;
+			$.ajax({
+				url: delete_url,
+				beforeSend: function(){
+					$('#ok_button').text('deleting...');
+				},
+				success: function(){
+					setTimeout(function(){
+						$('#confirmModal').modal('hide');
+						$('#user_table').DataTable().ajax.reload();
+						alert('Data deleted');
+					}, 2000);
 				}
 			});
 		});

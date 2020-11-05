@@ -88,9 +88,12 @@ class SampleController extends Controller
      * @param  \App\Sample_data  $sample_data
      * @return \Illuminate\Http\Response
      */
-    public function edit(Sample_data $sample_data)
+    public function edit(Request $request, $id)
     {
-        //
+        if($request->ajax()){
+            $data = Sample_data::findOrFail($id);
+            return response()->json(['result' => $data]);
+        }
     }
 
     /**
@@ -102,7 +105,25 @@ class SampleController extends Controller
      */
     public function update(Request $request, Sample_data $sample_data)
     {
-        //
+        $rules = [
+            'first_name' => 'required',
+            'last_name' => 'required',
+        ];
+
+        $error = Validator::make($request->all(), $rules);
+
+        if($error->fails()){
+            return response()->json(['errors' => $error->errors()->all()]);
+        }
+
+        $form_data = [
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+        ];
+
+        Sample_data::whereId($request->hidden_id)->update($form_data);
+
+        return response()->json(['success' => 'Data successfully updated']);
     }
 
     /**
@@ -111,8 +132,9 @@ class SampleController extends Controller
      * @param  \App\Sample_data  $sample_data
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Sample_data $sample_data)
+    public function destroy($id)
     {
-        //
+        $data = Sample_data::findOrFail($id);
+        $data->delete();
     }
 }
